@@ -1,0 +1,46 @@
+[tool.poetry]
+package-mode = true
+name = "petite-cli"
+version = "0.0.1"
+description = "A dead simple ProstgreSQL migrations manager"
+license = "MIT"
+authors = ["Kyle <ky42@protonmail.com>"]
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Topic :: Database",
+    "Topic :: Software Development :: Build Tools",
+    "Typing :: Typed"
+]
+packages = [
+    { include = "petite", from = "src" },
+]
+
+[tool.poetry.scripts]
+petite = "petite:app"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+typer = "^0.15.0"
+psycopg = {extras = ["binary"], version = "^3.2.3"}
+python-dotenv = "^1.0.1"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.3.4"
+pytest-mock = "^3.14.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+    "--ignore=tests/integration"
+]
+pythonpath = ["src"]
+testpaths = ["tests"]
