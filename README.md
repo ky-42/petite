@@ -4,7 +4,7 @@ A dead simple PostgreSQL migrations manager. Perfect for small to medium size pr
 
 ## Installation
 
-There are two main options when installing petite. You could install it as a system wide tool or you could install on a per project basis. If installing as a system wide tool I reccommend using [pipx](https://pipx.pypa.io/stable/). If installing on a per project basis I reccommend installing within a virtual environment.
+There are two main options when installing petite. You could install it as a system wide tool or you could install on a per project basis. If installing as a system wide tool I recommend using [pipx](https://pipx.pypa.io/stable/). If installing on a per project basis I recommend installing within a virtual environment.
 
 __pipx__
 
