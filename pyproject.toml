@@ -9,13 +9,13 @@ repository = "https://github.com/ky-42/petite"
 [tool.poetry]
 package-mode = true
 name = "petite-cli"
-version = "0.0.1"
-description = "A dead simple PostgreSQL migrations manager"
+version = "0.1.0"
+description = "A simple PostgreSQL migrations manager"
 license = "MIT"
 authors = ["Kyle <ky42@protonmail.com>"]
 readme = "README.md"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Natural Language :: English",
