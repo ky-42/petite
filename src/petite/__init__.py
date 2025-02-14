@@ -18,7 +18,7 @@ print()
 app = typer.Typer(
     pretty_exceptions_show_locals=False,
     help="""
-        A simple migration tool for PostgreSQL databases.\n
+        A simple PostgreSQL migrations manager.\n
         Note: If a .env file exists in the current directory
         it will be loaded automatically when a command is ran.
     """,
@@ -43,9 +43,9 @@ def setup(
         ),
     ],
 ):
-    """Initializes the migration system by setting up the necessary directories and database table.
+    """Initializes the migration system by setting up the necessary directory and database table.
 
-    Should be run once before running any other commands.
+    Should be run once per project before running any other commands.
     """
 
     db = Database(postgres_uri)
@@ -55,10 +55,6 @@ def setup(
 
 @app.command(name="new")
 def new_migration(
-    migration_name: Annotated[
-        str,
-        typer.Argument(help="Name of the new migration file."),
-    ],
     migrations_directory: Annotated[
         Path,
         typer.Option(
@@ -66,12 +62,17 @@ def new_migration(
             help="Path to location where the new migration file will be created.",
         ),
     ],
+    migration_name: Annotated[
+        str,
+        typer.Argument(help="Name of the new migration file."),
+    ],
 ):
     """Creates a new migration file in the migrations directory.
 
-    When created the file name will follow the format: YYMMDDHHMMSS_<migration_name>.sql.
-    This ensures that the migrations are applied in the correct order.
-    For this reason this command should be used to create all migration files.
+    Should be ran after `setup`. When created the file name will follow the
+    format: YYMMDDHHMMSS_migration_name.sql. This ensures that the migrations
+    are applied in the correct order. For this reason this command should be
+    used to create all migration files.
     """
 
     FileSystem(migrations_directory).create_migration_file(migration_name)
@@ -79,15 +80,15 @@ def new_migration(
 
 @app.command(name="apply")
 def apply_migrations(
+    postgres_uri: Annotated[
+        str, typer.Option(envvar="POSTGRES_URI", help=POSTGRES_URI_HELP)
+    ],
     migrations_directory: Annotated[
         Path,
         typer.Option(
             envvar="MIGRATIONS_DIRECTORY",
             help="Path to location where the migration files are stored.",
         ),
-    ],
-    postgres_uri: Annotated[
-        str, typer.Option(envvar="POSTGRES_URI", help=POSTGRES_URI_HELP)
     ],
     count: Annotated[
         int,
@@ -99,7 +100,10 @@ def apply_migrations(
 ):
     """Runs outstanding migrations.
 
-    If an error occurs while applying a migration, none of the migrations will be applied.
+    Should be run after `setup` and once new migrations have been created
+    with `new`. Will find new migrations then apply specified number to the
+    database in order of oldest unapplied to newest. If an error occurs while
+    applying a migration, none of the migrations will be applied.
     """
 
     db = Database(postgres_uri)

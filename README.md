@@ -1,6 +1,6 @@
 # Petite
 
-A dead simple PostgreSQL migrations manager. Perfect for small to medium size projects that just need a small and simple tool.
+A simple PostgreSQL migrations manager. Perfect for small to medium size projects that just need a small and simple tool.
 
 ## Installation
 
@@ -19,13 +19,26 @@ __pip__
     
 ## Usage
 
-Petite has only 3 commands `setup`, `new`, and `apply`. You are intended to run `setup` first. Then `new` to create new migration files. Then `apply` to run those migration files against the database. Below is a quick outline of each command but more detailed information can be found in the help menu once installed:
+**Commands**:
+
+* `setup`: Initializes the migration system by setting up the necessary directory and database table.
+* `new`: Creates a new migration file in the migrations directory.
+* `apply`: Runs outstanding migrations.
+
+**Note**: If a .env file exists in the current directory when a command is run it will be loaded automatically when a command is ran.
 
 ## `setup`
 
-This command is intended to be the first command ran when setting up a new project. This will create a migration table in your PostgreSQL database and create a directory to hold your migration files.
+Initializes the migration system by setting up the necessary directories and database table.
 
-__Example__
+Should be run once per project before running any other commands.
+
+**Options**:
+
+* `--postgres-uri TEXT`: URI of the PostgreSQL database to connect to.  [env var: POSTGRES_URI; required]
+* `--migrations-directory PATH`: Path to location where the migration files will be stored. If the destination directory does not exist it will be created assuming the parent directory exits.  [env var: MIGRATIONS_DIRECTORY; required]
+
+**Example**
 
 ```bash
   petite setup --postgres-uri postgresql://... --migrations-directory /.../migrations
@@ -33,22 +46,43 @@ __Example__
 
 ## `new`
 
-This command should be ran after `setup`. It creates a new file in the migrations directory where you can put your SQL code. It's ill advised that you create your own files as the file name is used as a means of ordering the migrations.
+Creates a new migration file in the migrations directory.
 
-__Example__
+Should be ran after `setup`. When created the file name will follow the format: YYMMDDHHMMSS_migration_name.sql. This ensures that the migrations are applied in the correct order. For this reason this command should be used to create all migration files.
+
+**Arguments**:
+
+* `MIGRATION_NAME`: Name of the new migration file.  [required]
+
+**Options**:
+
+* `--migrations-directory PATH`: Path to location where the new migration file will be created.  [env var: MIGRATIONS_DIRECTORY; required]
+
+**Example**
 
 ```bash
-  petite new migration_name --postgres-uri postgresql://... --migrations-directory /.../migrations
+  petite new --migrations-directory /.../migrations new_migration 
 ```
 
 ## `apply`
 
-This command should be run after `setup` and once new migrations have been created with `new`. It will find new migrations then apply the specified number to the database in order of oldest unapplied to newest. If any fail all the migrations applied during the execution of the command will be rolled back.
+Runs outstanding migrations.
 
-__Example__
+Should be run after `setup` and once new migrations have been created with `new`. Will find new migrations then apply specified number to the database in order of oldest unapplied to newest. If an error occurs while applying a migration, none of the migrations will be applied.
+
+**Arguments**:
+
+* `COUNT`: Number of new migrations to apply.  [default: (All)]
+
+**Options**:
+
+* `--postgres-uri TEXT`: URI of the PostgreSQL database to connect to.  [env var: POSTGRES_URI; required]
+* `--migrations-directory PATH`: Path to location where the migration files are stored.  [env var: MIGRATIONS_DIRECTORY; required]
+
+**Example**
 
 ```bash
-  petite apply 2 --postgres-uri postgresql://... --migrations-directory /.../migrations
+  petite apply --postgres-uri postgresql://... --migrations-directory /.../migrations 2
 ```
 
 ## Contributing

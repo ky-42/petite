@@ -1,8 +1,16 @@
+[project]
+name = "petite-cli"
+dynamic = [ "version" ]
+
+[project.urls]
+repository = "https://github.com/ky-42/petite"
+
+
 [tool.poetry]
 package-mode = true
 name = "petite-cli"
 version = "0.0.1"
-description = "A dead simple ProstgreSQL migrations manager"
+description = "A dead simple PostgreSQL migrations manager"
 license = "MIT"
 authors = ["Kyle <ky42@protonmail.com>"]
 readme = "README.md"
