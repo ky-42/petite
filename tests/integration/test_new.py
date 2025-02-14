@@ -7,19 +7,19 @@ from petite import app
 runner = CliRunner()
 
 
-def test_new_migration_no_folder(tmp_path: Path):
+def test_new_migration_no_directory(tmp_path: Path):
     result = runner.invoke(
         app,
         [
             "new",
             "test",
-            "--migrations-folder",
+            "--migrations-directory",
             str(tmp_path / "migrations"),
         ],
     )
 
     assert result.exit_code == 1
-    assert "Migration folder not found!" in result.stdout
+    assert "Migration directory not found!" in result.stdout
 
 
 def test_new_migration(tmp_path: Path):
@@ -31,7 +31,7 @@ def test_new_migration(tmp_path: Path):
         [
             "new",
             "test",
-            "--migrations-folder",
+            "--migrations-directory",
             str(mig_path),
         ],
     )

@@ -32,7 +32,7 @@ def test_apply_migrations_success(new_database: str, tmp_path: Path):
         [
             "apply",
             "1",
-            "--migrations-folder",
+            "--migrations-directory",
             str(mig_path),
             "--postgres-uri",
             new_database,
@@ -63,7 +63,7 @@ def test_apply_migrations_success(new_database: str, tmp_path: Path):
         app,
         [
             "apply",
-            "--migrations-folder",
+            "--migrations-directory",
             str(mig_path),
             "--postgres-uri",
             new_database,
@@ -110,7 +110,7 @@ def test_apply_migrations_fail(new_database: str, tmp_path: Path):
         [
             "apply",
             "2",
-            "--migrations-folder",
+            "--migrations-directory",
             str(mig_path),
             "--postgres-uri",
             new_database,

@@ -15,7 +15,7 @@ def test_setup(new_database: str, tmp_path: Path):
         app,
         [
             "setup",
-            "--migrations-folder",
+            "--migrations-directory",
             str(tmp_path / "migrations"),
             "--postgres-uri",
             new_database,
@@ -24,8 +24,8 @@ def test_setup(new_database: str, tmp_path: Path):
 
     assert result.exit_code == 0
     assert "Connected to the database" in result.stdout
-    assert "Created migrations folder" in result.stdout
-    assert "Created or found migration table" in result.stdout
+    assert "Created migrations directory" in result.stdout
+    assert "Created migration table" in result.stdout
 
     # Will raise an exception if the table doesn't exist
     db_conn = psycopg.connect(new_database)
@@ -36,7 +36,7 @@ def test_setup(new_database: str, tmp_path: Path):
 
     assert (tmp_path / "migrations").exists()
 
-    # Running the setup command again should not create a new folder
+    # Running the setup command again should not create a new directory
     # or table
 
     (tmp_path / "migrations" / "test.sql").write_text("")
@@ -45,7 +45,7 @@ def test_setup(new_database: str, tmp_path: Path):
         app,
         [
             "setup",
-            "--migrations-folder",
+            "--migrations-directory",
             str(tmp_path / "migrations"),
             "--postgres-uri",
             new_database,
@@ -54,8 +54,8 @@ def test_setup(new_database: str, tmp_path: Path):
 
     assert result.exit_code == 0
     assert "Connected to the database" in result.stdout
-    assert "Created or found migration table" in result.stdout
-    assert "Found migrations folder" in result.stdout
+    assert "Created migration table" in result.stdout
+    assert "Found migrations directory" in result.stdout
 
     # Will raise an exception if the table doesn't exist
     db_conn = psycopg.connect(new_database)

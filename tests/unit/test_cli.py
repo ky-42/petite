@@ -22,7 +22,7 @@ def test_apply_migrations_neg_num():
         [
             "apply",
             "'-2'",
-            "--migrations-folder",
+            "--migrations-directory",
             "migrations",
             "--postgres-uri",
             "postgres://user:password@localhost:5431/db",
@@ -47,7 +47,7 @@ def test_apply_migrations_no_existing(mock_db, mock_fs, apply_num):
             [
                 "apply",
                 str(apply_num),
-                "--migrations-folder",
+                "--migrations-directory",
                 "migrations",
                 "--postgres-uri",
                 "postgres://user:password@localhost:5432/db",
@@ -55,7 +55,7 @@ def test_apply_migrations_no_existing(mock_db, mock_fs, apply_num):
             if apply_num
             else [
                 "apply",
-                "--migrations-folder",
+                "--migrations-directory",
                 "migrations",
                 "--postgres-uri",
                 "postgres://user:password@localhost:5432/db",
@@ -89,7 +89,7 @@ def test_apply_migrations_existing(mock_db, mock_fs, apply_num):
             [
                 "apply",
                 str(apply_num),
-                "--migrations-folder",
+                "--migrations-directory",
                 "migrations",
                 "--postgres-uri",
                 "postgres://user:password@localhost:5432/db",
@@ -97,7 +97,7 @@ def test_apply_migrations_existing(mock_db, mock_fs, apply_num):
             if apply_num
             else [
                 "apply",
-                "--migrations-folder",
+                "--migrations-directory",
                 "migrations",
                 "--postgres-uri",
                 "postgres://user:password@localhost:5432/db",

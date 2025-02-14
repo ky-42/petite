@@ -15,7 +15,7 @@ class Database:
             print("[bold green]Connected[/] to the database successfully!\n")
         except Exception as e:
             print(
-                f"[bold red]Could not connect to the database![/]\nMake sure the database is running and URI is correct.\n\n[b]Error[/]: {e}."
+                f"[bold red]Could not connect to the database![/]\nMake sure the database is running and URI is correct.\n\n[b]Error[/]: {e}\n"
             )
             raise typer.Exit(code=1)
 
@@ -35,7 +35,7 @@ class Database:
 
         self.conn.commit()
 
-        print("[bold green]Created or found[/] migration table in the database.\n")
+        print("[bold green]Created[/] migration table in the database.\n")
 
     def get_last_applied_migration(self) -> Optional[Tuple[int, str, datetime]]:
         """Gets the last migration that was applied returning whole row"""
@@ -47,14 +47,14 @@ class Database:
                 )
             except psycopg.errors.UndefinedTable:
                 print(
-                    f"[bold red]Migration table not found![/]\nRun the [b]setup[/] command to setup migrations table."
+                    f"[bold red]Migration table not found![/]\nRun the [b]setup[/] command to setup migrations table.\n"
                 )
                 raise typer.Exit(code=1)
 
             value = cur.fetchone()
 
         if value is not None:
-            print(f"[bold green]Found[/] last applied migration [b]{value[1]}[/].\n")
+            print(f"Found last applied migration [b]{value[1]}[/].\n")
 
         return value
 
@@ -77,12 +77,12 @@ class Database:
 
                 except Exception as e:
                     print(
-                        f"\n[bold red]Error[/] applying migration: [b]{migration_name}[/]!\nRolling back migrations applied so far.\n\n[b]Error[/]: {e}."
+                        f"[bold red]Error[/] applying migration: [b]{migration_name}[/]!\n\nRolling back migrations applied so far.\n\n[b]Error[/]: {e}\n"
                     )
                     raise typer.Exit(code=1)
 
         self.conn.commit()
 
         print(
-            f"\n[bold green]Successfully applied[/] {len(migrations)} migration{'s' if len(migrations) > 1 else ''}."
+            f"\n[bold green]Successfully applied[/] {len(migrations)} migration{'s' if len(migrations) > 1 else ''}.\n"
         )

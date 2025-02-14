@@ -8,11 +8,21 @@ from rich import print
 
 from .utils import Database, FileSystem
 
+POSTGRES_URI_HELP = "URI of the PostgreSQL database to connect to."
+
 load_dotenv()
 
-app = typer.Typer(pretty_exceptions_show_locals=False)
+# Just to make the output prettier
+print()
 
-POSTGRES_URI_HELP = "URI of the PostgreSQL database to connect to."
+app = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    help="""
+        A simple migration tool for PostgreSQL databases.\n
+        Note: If a .env file exists in the current directory
+        it will be loaded automatically when a command is ran.
+    """,
+)
 
 
 @app.command()
@@ -21,21 +31,25 @@ def setup(
         str,
         typer.Option(envvar="POSTGRES_URI", help=POSTGRES_URI_HELP),
     ],
-    migrations_folder: Annotated[
+    migrations_directory: Annotated[
         Path,
         typer.Option(
-            envvar="MIGRATIONS_DIR",
-            help="Path where the migration files will be stored. If the folder does not exist it will be created.",
+            envvar="MIGRATIONS_DIRECTORY",
+            help="""
+                Path to location where the migration files will be stored.
+                If the destination directory does not exist it will be created
+                assuming the parent directory exits.
+            """,
         ),
     ],
 ):
-    """Initializes the migration system by setting up the necessary folders and database table.
+    """Initializes the migration system by setting up the necessary directories and database table.
 
     Should be run once before running any other commands.
     """
 
     db = Database(postgres_uri)
-    FileSystem.create_migration_folder(migrations_folder)
+    FileSystem.create_migration_directory(migrations_directory)
     db.create_migration_table()
 
 
@@ -45,30 +59,31 @@ def new_migration(
         str,
         typer.Argument(help="Name of the new migration file."),
     ],
-    migrations_folder: Annotated[
+    migrations_directory: Annotated[
         Path,
         typer.Option(
-            envvar="MIGRATIONS_DIR",
-            help="Folder where the new migration file will be created.",
+            envvar="MIGRATIONS_DIRECTORY",
+            help="Path to location where the new migration file will be created.",
         ),
     ],
 ):
-    """Creates a new migration file in the migrations folder.
+    """Creates a new migration file in the migrations directory.
 
     When created the file name will follow the format: YYMMDDHHMMSS_<migration_name>.sql.
     This ensures that the migrations are applied in the correct order.
     For this reason this command should be used to create all migration files.
     """
 
-    FileSystem(migrations_folder).create_migration_file(migration_name)
+    FileSystem(migrations_directory).create_migration_file(migration_name)
 
 
 @app.command(name="apply")
 def apply_migrations(
-    migrations_folder: Annotated[
+    migrations_directory: Annotated[
         Path,
         typer.Option(
-            envvar="MIGRATIONS_DIR", help="Folder where the migration files are stored."
+            envvar="MIGRATIONS_DIRECTORY",
+            help="Path to location where the migration files are stored.",
         ),
     ],
     postgres_uri: Annotated[
@@ -77,7 +92,8 @@ def apply_migrations(
     count: Annotated[
         int,
         typer.Argument(
-            help="Number of new migrations to apply. If not provided all outstanding migrations will be applied."
+            help="Number of new migrations to apply.",
+            show_default="All",
         ),
     ] = -1,
 ):
@@ -87,7 +103,7 @@ def apply_migrations(
     """
 
     db = Database(postgres_uri)
-    fs = FileSystem(migrations_folder)
+    fs = FileSystem(migrations_directory)
 
     all_migration_files = fs.get_migration_files()
     most_recent_migration = db.get_last_applied_migration()
@@ -99,25 +115,31 @@ def apply_migrations(
             )
         except ValueError:
             print(
-                f"\n[bold red]Error[/] migration [b]{most_recent_migration[1]}[/] not found in the migration folder."
+                f"[bold red]Error[/] migration [b]{most_recent_migration[1]}[/] not found in the migration directory.\n"
             )
             raise typer.Exit(code=1)
     else:
         most_recent_migration_index = -1
 
+    starting_migration_index = most_recent_migration_index + 1
+
     print(
-        f"Found {len(all_migration_files)} migration files with {len(all_migration_files[most_recent_migration_index+1:])} outstanding.\n"
+        f"Found {len(all_migration_files)} migration files with {len(all_migration_files[starting_migration_index:])} outstanding.\n"
     )
 
-    apply_till_index = (
+    # No new migrations
+    if starting_migration_index == len(all_migration_files):
+        return
+
+    ending_migration_index = (
         # Ensures we don't go out of bounds
-        min(most_recent_migration_index + count + 1, len(all_migration_files))
+        min(starting_migration_index + count, len(all_migration_files))
         if count > -1
         # Run all migrations
         else len(all_migration_files)
     )
 
-    files = all_migration_files[most_recent_migration_index + 1 : apply_till_index]
+    files = all_migration_files[starting_migration_index:ending_migration_index]
 
     to_apply = [(file, fs.get_migration(file)) for file in files]
 
