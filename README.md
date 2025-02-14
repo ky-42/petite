@@ -34,7 +34,7 @@ __Example__
 
 ## `apply`
 
-This command should be run after `setup` and once new migrations have been created with `new`. It will find new migrations then apply the specified number to the database in order of oldest unapplied to newest. If any fail all the migrations during the execution of the command will be rolled back.
+This command should be run after `setup` and once new migrations have been created with `new`. It will find new migrations then apply the specified number to the database in order of oldest unapplied to newest. If any fail all the migrations applied during the execution of the command will be rolled back.
 
 __Example__
 
