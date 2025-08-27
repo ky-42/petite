@@ -10,7 +10,7 @@ from .utils import Database, FileSystem
 
 POSTGRES_URI_HELP = "URI of the PostgreSQL database to connect to."
 
-load_dotenv()
+load_dotenv("./.env")
 
 # Just to make the output prettier
 print()
