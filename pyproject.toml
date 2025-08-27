@@ -9,7 +9,7 @@ repository = "https://github.com/ky-42/petite"
 [tool.poetry]
 package-mode = true
 name = "petite-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "A simple PostgreSQL migrations manager"
 license = "MIT"
 authors = ["Kyle <ky42@protonmail.com>"]
