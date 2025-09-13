@@ -1,5 +1,4 @@
 from pathlib import Path
-from re import M
 from typing import Annotated
 
 import typer
@@ -7,6 +6,7 @@ from dotenv import load_dotenv
 from rich import print
 
 from .utils import Database, FileSystem
+from .utils.confirmations import NO_TRANSACTION_MESSAGE, confirm_no_transaction
 
 POSTGRES_URI_HELP = "URI of the PostgreSQL database to connect to."
 
@@ -17,6 +17,7 @@ print()
 
 app = typer.Typer(
     pretty_exceptions_show_locals=False,
+    rich_markup_mode="rich",
     help="""
         A simple PostgreSQL migrations manager.\n
         Note: If a .env file exists in the current directory
@@ -97,6 +98,15 @@ def apply_migrations(
             show_default="All",
         ),
     ] = -1,
+    no_transaction: Annotated[
+        bool,
+        typer.Option(
+            "--no-transaction",
+            help="Apply migrations without wrapping them in a transaction.\n\n"
+            + NO_TRANSACTION_MESSAGE,
+            callback=confirm_no_transaction,
+        ),
+    ] = False,
 ):
     """Runs outstanding migrations.
 
@@ -146,5 +156,8 @@ def apply_migrations(
     files = all_migration_files[starting_migration_index:ending_migration_index]
 
     to_apply = [(file, fs.get_migration(file)) for file in files]
+
+    # Turn off transactions if specified
+    db.conn.autocommit = no_transaction
 
     db.apply_migrations(to_apply)

@@ -78,6 +78,8 @@ Should be run after `setup` and once new migrations have been created with `new`
 
 * `--postgres-uri TEXT`: URI of the PostgreSQL database to connect to.  [env var: POSTGRES_URI; required]
 * `--migrations-directory PATH`: Path to location where the migration files are stored.  [env var: MIGRATIONS_DIRECTORY; required]
+* `--no-transaction`: Apply migrations without wrapping them in a transaction. <span style="color: #800000; text-decoration-color: #800000; font-weight: bold">Danger:</span> Running migrations without a transaction is dangerous. If a migration fails when this is set, part of a migration may be applied but not recorded. This means part of the migration may rerun next time migrations are applied, leaving the database in an inconsistent state. It is recommended to only use this flag if the migrations being applied do not support being run in a transaction.
+* `--help`: Show this message and exit.
 
 **Example**
 

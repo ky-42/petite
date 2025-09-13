@@ -58,7 +58,7 @@ class Database:
 
         return value
 
-    def apply_migrations(self, migrations: List[Tuple[str, bytes]]):
+    def apply_migrations(self, migrations: List[Tuple[str, bytes]]) -> None:
         """Applies a single migration file to the database"""
 
         print(
@@ -68,11 +68,11 @@ class Database:
         with self.conn.cursor() as cur:
             for migration_name, migration_content in migrations:
                 try:
+                    cur.execute(migration_content)
                     cur.execute(
                         "INSERT INTO migration (file_name) VALUES (%s)",
                         (migration_name,),
                     )
-                    cur.execute(migration_content)
                     print(f"[bold green]Applied[/] migration [b]{migration_name}[/].")
 
                 except Exception as e:
