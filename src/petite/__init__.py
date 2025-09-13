@@ -157,7 +157,9 @@ def apply_migrations(
 
     to_apply = [(file, fs.get_migration(file)) for file in files]
 
-    # Turn off transactions if specified
-    db.conn.autocommit = no_transaction
+    # Turn off transactions if specified.
+    # Commit any previous transactions first otherwise you can't change autocommit
+    db.conn.commit()
+    db.conn.set_autocommit(no_transaction)
 
     db.apply_migrations(to_apply)

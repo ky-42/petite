@@ -16,10 +16,10 @@ def test_apply_migrations(mocker: MockerFixture):
 
     mock_cursor.execute.assert_has_calls(
         [
-            mocker.call(mocker.ANY, ("1.sql",)),
             mocker.call(b"A"),
-            mocker.call(mocker.ANY, ("2.sql",)),
+            mocker.call(mocker.ANY, ("1.sql",)),
             mocker.call(b"B"),
+            mocker.call(mocker.ANY, ("2.sql",)),
         ]
     )
 
