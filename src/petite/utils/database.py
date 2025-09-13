@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Optional, Tuple
 
 import psycopg
+import sqlglot
 import typer
 from rich import print
 
@@ -9,7 +10,7 @@ from rich import print
 class Database:
     """Class to handle database operations for migrations"""
 
-    def __init__(self, uri: str):
+    def __init__(self, uri: str) -> None:
         try:
             self.conn = psycopg.connect(uri)
             print("[bold green]Connected[/] to the database successfully!\n")
@@ -58,26 +59,70 @@ class Database:
 
         return value
 
-    def apply_migrations(self, migrations: List[Tuple[str, bytes]]) -> None:
+    def apply_migrations(
+        self, migrations: List[Tuple[str, bytes]], no_transaction: bool = False
+    ) -> None:
         """Applies a single migration file to the database"""
 
         print(
             f"Attempting to apply {len(migrations)} migration{'s' if len(migrations) > 1 else ''}.\n"
         )
 
+        no_transaction_fail_index = -1
+        if no_transaction:
+            # Need to commit any open transaction before setting autocommit
+            self.conn.commit()
+            self.conn.autocommit = no_transaction
+
         with self.conn.cursor() as cur:
             for migration_name, migration_content in migrations:
                 try:
-                    cur.execute(migration_content)
                     cur.execute(
                         "INSERT INTO migration (file_name) VALUES (%s)",
                         (migration_name,),
                     )
+
+                    if not no_transaction:
+                        cur.execute(migration_content)
+                    else:
+                        # Run each statement in the migration file separately so no
+                        # transaction is opened by psycopg because if multiple
+                        # statements are run in one execute call psycopg will open a
+                        # transaction even if autocommit is True
+                        for index, statement in enumerate(
+                            self.__split_migration(migration_content)
+                        ):
+                            # Track the current statement so we know what was not
+                            # applied for error message later
+                            no_transaction_fail_index = index
+                            cur.execute(statement)
+
                     print(f"[bold green]Applied[/] migration [b]{migration_name}[/].")
 
                 except Exception as e:
                     print(
-                        f"[bold red]Error[/] applying migration: [b]{migration_name}[/]!\n\nRolling back migrations applied so far.\n\n[b]Error[/]: {e}\n"
+                        f"[bold red]Error[/] applying migration: [b]{migration_name}[/]!\n\n"
+                        + f"[bold red]Error[/]: {e}\n"
+                        + (
+                            "Rolling back migrations applied so far."
+                            if not no_transaction
+                            else (
+                                "[bold red]Danger:[/] Statements before the error in the "
+                                f"migration file [b]{migration_name}[/] have already been applied. "
+                                "The statements not applied include:\n\n"
+                                + "\n".join(
+                                    [
+                                        stmt.decode("utf-8") + ";"
+                                        for stmt in self.__split_migration(
+                                            migration_content
+                                        )[no_transaction_fail_index:]
+                                    ]
+                                )
+                                + "\n\nIt is recommended you personally check which statements succeeded "
+                                "and remove any that did not from the migration file. "
+                                "Unapplied statements should be moved to a new migration file."
+                            )
+                        )
                     )
                     raise typer.Exit(code=1)
 
@@ -86,3 +131,16 @@ class Database:
         print(
             f"\n[bold green]Successfully applied[/] {len(migrations)} migration{'s' if len(migrations) > 1 else ''}.\n"
         )
+
+    def __split_migration(self, migration_content: bytes) -> List[bytes]:
+        """Splits a migrations content into individual SQL statements"""
+
+        parsed_migration = sqlglot.parse(
+            migration_content.decode("utf-8"), read="postgres"
+        )
+
+        return [
+            statement.sql(dialect="postgres").encode("utf-8")
+            for statement in parsed_migration
+            if statement
+        ]

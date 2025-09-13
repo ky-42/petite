@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 
 import psycopg
@@ -124,6 +125,7 @@ def test_apply_migrations_fail(new_database: str, tmp_path: Path):
     assert "Attempting to apply 2 migrations" in result.stdout
     assert "Applied migration 1_test.sql" in result.stdout
     assert "Error applying migration: 2_test.sql" in result.stdout
+    assert "Rolling back migrations applied so far" in result.stdout
 
     # Ensure the migration table is empty meaning the first
     # migration was rolled back
@@ -132,3 +134,107 @@ def test_apply_migrations_fail(new_database: str, tmp_path: Path):
         with pytest.raises(psycopg.errors.UndefinedTable):
             cur.execute("SELECT * FROM test")
     db_conn.close()
+
+
+def test_apply_no_transaction_success(new_database: str, tmp_path: Path):
+    mig_path = tmp_path / "migrations"
+    mig_path.mkdir()
+
+    random_name = "".join(random.choices("abcdefghijklmnopqrstuvwxyz", k=10))
+
+    (mig_path / "1_test.sql").write_text(
+        f"CREATE USER {random_name} WITH PASSWORD '';\nCREATE DATABASE {random_name} OWNER {random_name};\nGRANT ALL PRIVILEGES ON DATABASE {random_name} TO {random_name};"
+    )
+
+    db = Database(new_database)
+    db.create_migration_table()
+
+    result = runner.invoke(
+        app,
+        [
+            "apply",
+            "--migrations-directory",
+            str(mig_path),
+            "--postgres-uri",
+            new_database,
+            "--no-transaction",
+        ],
+        input="y",
+    )
+
+    assert result.exit_code == 0
+    assert "Found 1 migration files with 1 outstanding" in result.stdout
+    assert "Attempting to apply 1 migration" in result.stdout
+    assert "Applied migration 1_test.sql" in result.stdout
+
+    conn = psycopg.connect(new_database)
+
+    # Check if user and database were created
+    with conn.cursor() as cur:
+        # Check user existence
+        cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s;", (random_name,))
+        assert cur.fetchone() is not None
+
+        # Check database existence
+        cur.execute("SELECT 1 FROM pg_database WHERE datname = %s;", (random_name,))
+        assert cur.fetchone() is not None
+    conn.close()
+
+
+def test_apply_no_transaction_fail(new_database: str, tmp_path: Path):
+    mig_path = tmp_path / "migrations"
+    mig_path.mkdir()
+
+    random_db_name = "".join(random.choices("abcdefghijklmnopqrstuvwxyz", k=10))
+
+    (mig_path / "1_test.sql").write_text(
+        f"CREATE USER {random_db_name} WITH PASSWORD '';\nCREATE DATABASE {random_db_name} OWNER {random_db_name};\nGRANT ALL PRIVILEGES ON DATABASE {random_db_name} TO {random_db_name};"
+    )
+    (mig_path / "2_test.sql").write_text(
+        f"CREATE USER {random_db_name+'1'} WITH PASSWORD '';\nCREATE ERROR DATABASE {random_db_name+'1'} OWNER {random_db_name+'1'};\nGRANT ALL PRIVILEGES ON DATABASE {random_db_name+'1'} TO {random_db_name+'1'};"
+    )
+
+    db = Database(new_database)
+    db.create_migration_table()
+
+    result = runner.invoke(
+        app,
+        [
+            "apply",
+            "--migrations-directory",
+            str(mig_path),
+            "--postgres-uri",
+            new_database,
+            "--no-transaction",
+        ],
+        input="y",
+    )
+
+    assert result.exit_code == 1
+    assert "Found 2 migration files with 2 outstanding" in result.stdout
+    assert "Attempting to apply 2 migrations" in result.stdout
+    assert "Applied migration 1_test.sql" in result.stdout
+    assert "Error applying migration: 2_test.sql" in result.stdout
+    assert (
+        f"CREATE ERROR DATABASE {random_db_name+'1'} OWNER {random_db_name+'1'}"
+        in result.stdout
+    )
+
+    conn = psycopg.connect(new_database)
+
+    # Check if user and database were created
+    with conn.cursor() as cur:
+        # Check user existence
+        cur.execute(
+            "SELECT 1 FROM pg_roles WHERE rolname IN (%s,%s);",
+            (random_db_name, random_db_name + "1"),
+        )
+        assert len(cur.fetchall()) == 2
+
+        # Check database existence
+        cur.execute(
+            "SELECT 1 FROM pg_database WHERE datname IN (%s,%s);",
+            (random_db_name, random_db_name + "1"),
+        )
+        assert len(cur.fetchall()) == 1
+    conn.close()

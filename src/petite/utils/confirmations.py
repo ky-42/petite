@@ -4,17 +4,16 @@ import typer
 from rich import print
 
 NO_TRANSACTION_MESSAGE = (
-    "[bold red]Danger:[/] Running migrations without a transaction is dangerous. "
-    "If a migration fails when this is set, "
-    "part of a migration may be applied but not recorded. "
-    "This means part of the migration may rerun next time migrations are applied, "
-    "leaving the database in an inconsistent state. "
-    "It is recommended to only use this flag if the migrations being applied "
-    "do not support being run in a transaction.\n"
+    "[bold red]Danger:[/] Running migrations without a transaction is risky. "
+    "If a migration fails, the failing statement and all subsequent statements "
+    "in the file will be skipped, and they will not be retried later. "
+    "This can leave your database in an inconsistent state. "
+    "Use this flag only if your migrations cannot run in a transaction.\n"
 )
 
 
 def confirm_no_transaction(value: bool):
+    """Callback to confirm no-transaction option on apply command"""
     if value:
         print(NO_TRANSACTION_MESSAGE)
 

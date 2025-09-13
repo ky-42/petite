@@ -16,10 +16,10 @@ def test_apply_migrations(mocker: MockerFixture):
 
     mock_cursor.execute.assert_has_calls(
         [
-            mocker.call(b"A"),
             mocker.call(mocker.ANY, ("1.sql",)),
-            mocker.call(b"B"),
+            mocker.call(b"A"),
             mocker.call(mocker.ANY, ("2.sql",)),
+            mocker.call(b"B"),
         ]
     )
 
@@ -36,3 +36,31 @@ def test_apply_migrations_fail(mocker: MockerFixture):
 
     with pytest.raises(typer.Exit):
         db.apply_migrations([("1.sql", b"A"), ("2.sql", b"B")])
+
+
+def test_apply_migrations_no_transaction(mocker: MockerFixture):
+    mock_conn = mocker.patch("petite.utils.database.psycopg.connect").return_value
+    mock_cursor = mocker.MagicMock()
+    mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+
+    db = Database("fake_uri")
+
+    db.apply_migrations(
+        [
+            (
+                "1.sql",
+                b"CREATE USER new_test WITH PASSWORD '';\nCREATE DATABASE new_test OWNER new_test;\nGRANT ALL PRIVILEGES ON DATABASE new_test TO new_test;",
+            ),
+        ],
+        no_transaction=True,
+    )
+
+    mock_cursor.execute.assert_has_calls(
+        [
+            mocker.call(mocker.ANY, ("1.sql",)),
+            mocker.call(b"CREATE USER new_test WITH PASSWORD ''"),
+            mocker.call(b"CREATE DATABASE new_test OWNER new_test"),
+            mocker.call(b"GRANT ALL PRIVILEGES ON DATABASE new_test TO new_test"),
+        ]
+    )
+    assert mock_conn.autocommit is True

@@ -65,11 +65,12 @@ def test_apply_migrations_no_existing(mock_db, mock_fs, apply_num):
 
     assert result.exit_code == 0
 
-    mock_db.apply_migrations.assert_called_once_with(
-        [("migration1.sql", "SQL COMMAND"), ("migration2.sql", "SQL COMMAND")][
-            :apply_num
-        ]
-    )
+    expected_migrations = [
+        ("migration1.sql", "SQL COMMAND"),
+        ("migration2.sql", "SQL COMMAND"),
+    ][:apply_num]
+    actual_args = mock_db.apply_migrations.call_args[0][0]
+    assert actual_args == expected_migrations
 
 
 @pytest.mark.parametrize("apply_num", [None, 1, 2, 3])
@@ -107,9 +108,27 @@ def test_apply_migrations_existing(mock_db, mock_fs, apply_num):
 
     assert result.exit_code == 0
 
-    mock_db.apply_migrations.assert_called_once_with(
+    expected_migrations = [
+        ("migration2.sql", "SQL COMMAND"),
+        ("migration3.sql", "SQL COMMAND"),
+    ][:apply_num]
+    actual_args = mock_db.apply_migrations.call_args[0][0]
+    assert actual_args == expected_migrations
+
+
+def test_apply_no_transaction_confirm_deny():
+    result = runner.invoke(
+        app,
         [
-            ("migration2.sql", "SQL COMMAND"),
-            ("migration3.sql", "SQL COMMAND"),
-        ][:apply_num]
+            "apply",
+            "--migrations-directory",
+            "test",
+            "--postgres-uri",
+            "test",
+            "--no-transaction",
+        ],
+        input="n",
     )
+
+    assert result.exit_code == 0
+    assert "Aborting" in result.stdout
