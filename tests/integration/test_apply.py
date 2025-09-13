@@ -20,7 +20,7 @@ def test_apply_migrations_success(new_database: str, tmp_path: Path):
         "ALTER TABLE test ADD COLUMN test_column_one INT;"
     )
     (mig_path / "3_test.sql").write_text(
-        "ALTER TABLE test ADD COLUMN test_column_two INT;"
+        "ALTER TABLE test ADD COLUMN test_column_two INT;\nALTER TABLE test ADD COLUMN test_column_three INT;"
     )
 
     # Tested elsewhere
@@ -81,7 +81,9 @@ def test_apply_migrations_success(new_database: str, tmp_path: Path):
     with db_conn.cursor() as cur:
         # Error would be thrown if column doesn't exist
         # Meaning the migrations were not applied
-        cur.execute("INSERT INTO test (test_column_one, test_column_two) VALUES (1, 2)")
+        cur.execute(
+            "INSERT INTO test (test_column_one, test_column_two, test_column_three) VALUES (1, 2, 3);"
+        )
         db_conn.commit()
 
         cur.execute("SELECT * FROM migration")
